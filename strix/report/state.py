@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, cast
 from uuid import uuid4
 
-from strix.config import codex
+from strix.config import subscription
 from strix.config.loader import load_settings
 from strix.core.paths import run_dir_for, runtime_state_dir
 from strix.report.coverage import write_coverage
@@ -222,7 +222,7 @@ class ReportState:
 
         self._llm_usage = LLMUsageLedger()
         self._telemetry_llm_usage_baseline: dict[str, Any] = {}
-        auth_mode = codex.auth_mode(load_settings().llm.model)
+        auth_mode = subscription.auth_mode(load_settings().llm.model)
         self._llm_usage.zero_cost = auth_mode == "subscription"
         self.run_record: dict[str, Any] = {
             "run_id": self.run_id,
@@ -231,6 +231,7 @@ class ReportState:
             "end_time": None,
             "status": "running",
             "auth_mode": auth_mode,
+            "subscription_provider": subscription.provider_label(load_settings().llm.model),
             "targets_info": [],
             "llm_usage": self._build_llm_usage_record(),
         }
@@ -280,6 +281,7 @@ class ReportState:
         data = read_run_record(run_dir)
         if data:
             self.run_record.update(data)
+            self.run_record["subscription_provider"] = subscription.recorded_provider_label(data)
             if isinstance(data.get("start_time"), str):
                 self.start_time = data["start_time"]
             if isinstance(data.get("end_time"), str):

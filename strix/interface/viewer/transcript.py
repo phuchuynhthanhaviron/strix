@@ -4,8 +4,9 @@ from __future__ import annotations
 
 import json
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
+from strix.config import subscription
 from strix.core.paths import run_record_path
 from strix.interface.tui.live_view import TuiLiveView
 
@@ -52,12 +53,14 @@ def build_run_state(run_dir: Path) -> dict[str, Any]:
 
 def read_run_summary(run_dir: Path) -> dict[str, Any]:
     """The ``run.json`` record plus a computed ``finished`` flag."""
-    record = _load_json(run_record_path(run_dir), default={})
-    if not isinstance(record, dict):
-        record = {}
+    value = _load_json(run_record_path(run_dir), default={})
+    record = cast("dict[str, Any]", value) if isinstance(value, dict) else {}
     status = record.get("status")
     finished = status in _TERMINAL_STATUSES and bool(record.get("end_time"))
-    return {**record, "finished": finished}
+    summary = {**record, "finished": finished}
+    if label := subscription.recorded_provider_label(summary):
+        summary["subscription_provider"] = label
+    return summary
 
 
 def primary_target(record: dict[str, Any]) -> str | None:

@@ -15,7 +15,7 @@ from rich.console import Console
 from rich.panel import Panel
 from rich.text import Text
 
-from strix.config import codex, load_settings, persist_current
+from strix.config import load_settings, persist_current, subscription
 from strix.core.paths import RUNS_DIR_NAME, run_dir_for
 from strix.interface.cli_args import (
     FAIL_ON_SEVERITIES,
@@ -86,9 +86,13 @@ def _exception_messages(exc: BaseException) -> tuple[str, ...]:
 
 
 def _subscription_error_hint(exc: BaseException) -> str | None:
-    """Return an actionable hint for a known ChatGPT-subscription error, or None."""
-    if not codex.subscription_model(load_settings().llm.model):
+    """Return an actionable hint for a known subscription error, or None."""
+    model = load_settings().llm.model
+    provider = subscription.provider_for_model(model)
+    if provider is None:
         return None
+    label = subscription.provider_label(model)
+    login = "chatgpt" if provider.PROVIDER == "codex" else provider.PROVIDER
     joined = " ".join(_exception_messages(exc)).lower()
     if "not supported when using codex with a chatgpt account" in joined:
         return (
@@ -102,9 +106,25 @@ def _subscription_error_hint(exc: BaseException) -> str | None:
         or "invalid_grant" in joined
     ):
         return (
-            "Your ChatGPT sign-in has expired or was revoked. Sign in again:\n"
-            "  strix auth login chatgpt"
+            f"Your {label} sign-in has expired or was revoked. Sign in again:\n"
+            f"  strix auth login {login}"
         )
+    if provider.PROVIDER == "grok":
+        hints = (
+            (("426",), "Grok requires a newer CLI protocol. Update Strix for Grok compatibility."),
+            (
+                ("429", "quota", "rate limit"),
+                "Grok subscription quota or rate limit reached. Wait for your allowance to reset.",
+            ),
+            (
+                ("403", "404"),
+                "Grok subscription access was denied or the model is unavailable. "
+                "Check your plan and select a model it includes; no API-key fallback is used.",
+            ),
+        )
+        for needles, hint in hints:
+            if any(needle in joined for needle in needles):
+                return hint
     return None
 
 

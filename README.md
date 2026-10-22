@@ -317,6 +317,33 @@ export STRIX_LLM="chatgpt/gpt-5.4"   # chatgpt/<model> runs on the subscription
 strix auth status                    # show the active sign-in, or logout to forget it
 ```
 
+#### Sign in with a Grok / SuperGrok subscription
+
+```bash
+strix auth login grok                  # browser sign-in; --manual for pasted callback
+export STRIX_LLM="grok/grok-4.7"     # select a model included in your account
+strix auth status grok
+strix -n --target ./ --scan-mode quick
+strix auth logout grok                 # leaves ChatGPT credentials intact
+```
+
+This opt-in compatibility integration uses the Grok CLI OAuth client and
+`cli-chat-proxy.grok.com`, following [xAI's CLI protocol](https://github.com/xai-org/grok-build/blob/main/crates/codegen/xai-grok-shell/README.md#using-authjson-for-api-access).
+It is not an official third-party subscription API. Available models, plan eligibility,
+and quota depend on your account and may change. `xai/<model>` remains the separate,
+metered API-key route; Strix never falls back to it from `grok/<model>`.
+
+Tokens are stored separately from scan configuration in
+`~/.strix/subscription-auth.json`, owner-only from creation, with atomic writes and
+cross-process refresh locking. Subscription sign-in/refresh currently requires a POSIX
+platform (macOS or Linux). Strix always streams Grok requests, including preflight,
+compaction, and deduplication, regardless of `LLM_DISABLE_STREAMING`.
+
+Reports retain token counts and show zero **estimated API cost** for subscription runs.
+This does not measure your remaining allowance or any charges made by xAI. On an expired
+session, sign in again; on quota limits, wait for the allowance to reset. Docker is still
+required for local scans. Only scan targets you are authorized to test.
+
 #### Use the managed platform: `strix cloud`
 
 Run scans on [app.strix.ai](https://app.strix.ai) from the terminal, without Docker or an LLM key:

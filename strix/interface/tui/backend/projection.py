@@ -176,6 +176,7 @@ def bounded_state_projection(state: dict[str, Any]) -> dict[str, Any]:
         "messages": [],
         "usage": state["usage"],
         "subscription": state["subscription"],
+        "subscription_label": state.get("subscription_label"),
         "connections": state.get("connections", [])[:32],
         "viewer_status": state["viewer_status"],
         "viewer_url": None,

@@ -23,7 +23,7 @@ from strix.interface.tui.backend.projection import (
     sanitize_terminal_text,
     terminal_projection,
 )
-from strix.interface.utils import is_subscription_run
+from strix.interface.utils import is_subscription_run, subscription_label
 
 
 if TYPE_CHECKING:
@@ -213,6 +213,7 @@ class TuiController:
             ],
             "usage": terminal_projection(usage, max_string=256, max_items=20),
             "subscription": subscription,
+            "subscription_label": subscription_label(self.report_state) if subscription else "",
             "connections": [
                 {
                     "name": terminal_projection(entry["name"], max_string=64),
